@@ -90,8 +90,8 @@ async function changeUserQuestion(userId: string, newQuestionId: string) {
 		.then((userState) => replaceQuestion(userState, newQuestionId))
 		.then((userState) => saveUser(userId, userState));
 }
-async function addQuestion(question: string, id: string = questionId()) {
-	await db.set("QUESTION-" + id, question);
+async function addQuestion(question: string, id?: string) {
+	await db.set("QUESTION-" + (id ?? questionId()), question);
 	return id;
 }
 async function scheduleQuestion(userId: string, questionId: string, isoDate: string) {
@@ -106,7 +106,7 @@ async function bot() {
 
 	if (!(await getQuestion("IDEAS"))) {
 		await db.empty();
-		await addQuestion("What are your ideas for using this?", "QUESTION-IDEAS");
+		await addQuestion("What are your ideas for using this?", "IDEAS");
 	}
 
 	if (!(await getUser(allowedChat))) {
