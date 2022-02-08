@@ -1,5 +1,5 @@
 import TelegramBot from "node-telegram-bot-api/src/telegram";
-import { Client } from "@replit/database";
+import Client from "@replit/database";
 import { nanoid } from "nanoid";
 
 ////////
@@ -60,6 +60,7 @@ function dueQuestions(userState: UserState) {
 /////////////
 //APPLICATION
 /////////////
+//@ts-ignore
 const db = new Client();
 function getUser(userId) {
 	return db.get("USER-" + userId) as Promise<UserState>;
