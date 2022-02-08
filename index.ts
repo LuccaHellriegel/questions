@@ -105,11 +105,12 @@ async function bot() {
 	const allowedChat = process.env["chatID"];
 
 	if (!(await getQuestion("IDEAS"))) {
+		await db.empty();
 		await addQuestion("What are your ideas for using this?", "QUESTION-IDEAS");
 	}
 
 	if (!(await getUser(allowedChat))) {
-		saveUser(allowedChat, { currentQuestionId: "IDEAS", answers: [], sortedScheduledQuestions: [] });
+		await saveUser(allowedChat, { currentQuestionId: "IDEAS", answers: [], sortedScheduledQuestions: [] });
 	}
 
 	const bot = new TelegramBot(token, { polling: true });
@@ -124,15 +125,19 @@ async function bot() {
 		};
 	}
 
+	function sendMessage(msg) {
+		return bot.sendMessage(allowedChat, msg);
+	}
+
 	const onTextReactions = new Map<RegExp, Function>();
 
 	onTextReactions.set(/\/debug */, async () => {
-		bot.sendMessage(JSON.stringify(await db.getAll(), undefined, 2));
+		sendMessage(JSON.stringify(await db.getAll(), undefined, 2));
 	});
 	onTextReactions.set(/\/allQuestions */, async () =>
-		getAllQuestions().then((questions) => bot.sendMessage(questionList(questions)))
+		getAllQuestions().then((questions) => sendMessage(questionList(questions)))
 	);
-	onTextReactions.set(/\/currentQuestion */, async () => bot.sendMessage(await getUserQuestion(allowedChat)));
+	onTextReactions.set(/\/currentQuestion */, async () => sendMessage(await getUserQuestion(allowedChat)));
 
 	bot.on("polling_error", (err) => console.log(err));
 
@@ -143,7 +148,7 @@ async function bot() {
 		);
 	});
 
-	bot.sendMessage(allowedChat, "Online!\n* " + Array.from(onTextReactions.keys()).join("\n* "));
+	sendMessage("Online!\n* " + Array.from(onTextReactions.keys()).join("\n* "));
 }
 
 bot();
