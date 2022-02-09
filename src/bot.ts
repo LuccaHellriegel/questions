@@ -61,6 +61,7 @@ export async function bot() {
 			/\/.+/,
 			reject(async (_, ...args) => {
 				await answerQuestion(allowedChat, args[0]);
+				bot.removeTextListener(/\/.+/);
 				onTextReactions.forEach((reaction, answer) => {
 					bot.onText(
 						answer,
