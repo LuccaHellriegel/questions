@@ -1,4 +1,4 @@
-import { UserState, addAnswer, replaceQuestion, questionId, addScheduledQuestion } from "./domain";
+import { UserState, addAnswer, questionId, addScheduledQuestion, scheduledQuestion, RepetitionType } from "./domain";
 import Client from "@replit/database";
 
 //@ts-ignore
@@ -15,7 +15,7 @@ export function getAllQuestions() {
 		.then((questionKeys) => Promise.all(questionKeys.map((key) => db.get(key) as Promise<string>)));
 }
 export function getUserQuestion(userId: string) {
-	return getUser(userId).then((userState) => getQuestion((userState as UserState).currentQuestionId));
+	return getUser(userId).then((userState) => getQuestion((userState as UserState).currentQuestion.questionId));
 }
 export async function saveUser(userId: string, userState: UserState) {
 	await db.set("USER-" + userId, userState);
@@ -26,17 +26,17 @@ export function answerQuestionNow(userId: string, questionId: string, answer: st
 		.then((userState) => addAnswer(userState, { answer, questionId, date: new Date().toISOString() }))
 		.then((userState) => saveUser(userId, userState));
 }
-export async function changeUserQuestion(userId: string, newQuestionId: string) {
-	return getUser(userId)
-		.then((userState) => replaceQuestion(userState, newQuestionId))
-		.then((userState) => saveUser(userId, userState));
-}
 export async function addQuestion(question: string, id?: string) {
 	await db.set("QUESTION-" + (id ?? questionId()), question);
 	return id;
 }
-export async function scheduleQuestion(userId: string, questionId: string, isoDate: string) {
+export async function scheduleQuestion(
+	userId: string,
+	questionId: string,
+	isoDate: string,
+	repetition: RepetitionType = RepetitionType.NONE
+) {
 	return getUser(userId)
-		.then((userState) => addScheduledQuestion(userState, { questionId, date: isoDate }))
+		.then((userState) => addScheduledQuestion(userState, scheduledQuestion(questionId, isoDate, repetition)))
 		.then((userState) => saveUser(userId, userState));
 }
