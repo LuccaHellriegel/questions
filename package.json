@@ -4,7 +4,9 @@
 	"description": "",
 	"main": "index.ts",
 	"scripts": {
-		"start": "ts-node ./src/index.ts"
+		"start": "ts-node ./src/index.ts",
+		"test": "vitest",
+		"coverage": "vitest run --coverage"
 	},
 	"repository": {
 		"type": "git",
@@ -23,9 +25,11 @@
 	},
 	"devDependencies": {
 		"@types/node": "^17.0.13",
+		"c8": "^7.11.0",
 		"ts-node": "^10.4.0",
 		"tslib": "^2.3.1",
-		"typescript": "^4.5.5"
+		"typescript": "^4.5.5",
+		"vitest": "^0.2.8"
 	},
 	"engines": {
 		"node": "=12.22.6"
