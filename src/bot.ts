@@ -8,6 +8,7 @@ import {
 	dailyQuestion,
 	startInteraction,
 	answerQuestion,
+	endInteraction,
 } from "./app";
 import { defaultState, questionList, QuestionType } from "./domain";
 import TelegramBot from "node-telegram-bot-api/src/telegram";
@@ -52,14 +53,14 @@ export async function bot() {
 		getAllQuestions().then((questions) => sendMessage(questionList(questions.map((q) => q.text))))
 	);
 	onTextReactions.set(/\/startInteraction */, async () => startInteraction(allowedChat));
+	onTextReactions.set(/\/endInteraction */, async () => endInteraction(allowedChat));
 	onTextReactions.set(/\/currentQuestion */, async () => sendMessage(await getUserQuestion(allowedChat)));
 	onTextReactions.set(/\/answer */, async () => {
-		bot = new TelegramBot(token, { polling: true });
+		Array.from(onTextReactions.keys()).forEach((regEx) => bot.removeTextListener(regEx));
 		bot.onText(
 			/\/.+/,
 			reject(async (_, ...args) => {
 				await answerQuestion(allowedChat, args[0]);
-				bot = new TelegramBot(token, { polling: true });
 				onTextReactions.forEach((reaction, answer) => {
 					bot.onText(
 						answer,

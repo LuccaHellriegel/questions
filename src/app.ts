@@ -7,6 +7,7 @@ import {
 	addAnswerToCurrentQuestion,
 	addInteraction,
 	addDailyQuestion,
+	removeInteraction,
 } from "./domain";
 import Client from "@replit/database";
 
@@ -72,6 +73,10 @@ export async function scheduleQuestion(userId: string, questionId: string, isoDa
 export async function startInteraction(userId: string) {
 	return modifyUser(userId, addInteraction);
 }
+export async function endInteraction(userId: string) {
+	return modifyUser(userId, removeInteraction);
+}
+
 export async function dailyQuestion(userId: string, questionId: string) {
 	return modifyUser(userId, (userState) => addDailyQuestion(userState, questionId));
 }
