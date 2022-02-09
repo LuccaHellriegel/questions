@@ -1,24 +1,21 @@
-import { getQuestion, addQuestion, getUser, saveUser, db, getAllQuestions, getUserQuestion } from "./app";
-import { questionList, scheduledQuestion } from "./domain";
+import { saveQuestion, getUser, saveUser, db, getAllQuestions, getUserQuestion, dailyQuestion } from "./app";
+import { defaultState, questionList, QuestionType } from "./domain";
 import TelegramBot from "node-telegram-bot-api/src/telegram";
 
 export async function bot() {
 	const token = process.env["botToken"];
 	const allowedChat = process.env["chatID"];
 
-	if (!(await getQuestion("IDEAS"))) {
-		//await db.empty();
-		await addQuestion("What are your ideas for using this?", "IDEAS");
-	}
-
 	//@ts-ignore
 	if (!(await getUser(allowedChat)) || (await getUser(allowedChat)).currentQuestionId) {
-		await saveUser(allowedChat, {
-			currentQuestion: scheduledQuestion("IDEAS", new Date().toISOString()),
-			answers: [],
-			sortedScheduledQuestions: [],
-		});
+		await db.empty();
+		await saveUser(allowedChat, defaultState());
 	}
+
+	await saveQuestion({ type: QuestionType.TEXT, text: "What are your ideas for using this?" }, "IDEAS");
+	await saveQuestion({ type: QuestionType.TEXT, text: "How long did you sleep?" }, "SLEEP");
+
+	await dailyQuestion(allowedChat, "SLEEP");
 
 	const bot = new TelegramBot(token, { polling: true });
 
