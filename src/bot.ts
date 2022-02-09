@@ -1,4 +1,14 @@
-import { saveQuestion, getUser, saveUser, db, getAllQuestions, getUserQuestion, dailyQuestion } from "./app";
+import {
+	saveQuestion,
+	getUser,
+	saveUser,
+	db,
+	getAllQuestions,
+	getUserQuestion,
+	dailyQuestion,
+	startInteraction,
+	answerQuestion,
+} from "./app";
 import { defaultState, questionList, QuestionType } from "./domain";
 import TelegramBot from "node-telegram-bot-api/src/telegram";
 
@@ -17,7 +27,7 @@ export async function bot() {
 
 	await dailyQuestion(allowedChat, "SLEEP");
 
-	const bot = new TelegramBot(token, { polling: true });
+	let bot = new TelegramBot(token, { polling: true });
 
 	function reject(callback) {
 		return (msg, ...args) => {
@@ -39,11 +49,26 @@ export async function bot() {
 		sendMessage(JSON.stringify(await db.getAll(), undefined, 2));
 	});
 	onTextReactions.set(/\/allQuestions */, async () =>
-		getAllQuestions().then((questions) => sendMessage(questionList(questions)))
+		getAllQuestions().then((questions) => sendMessage(questionList(questions.map((q) => q.text))))
 	);
+	onTextReactions.set(/\/startInteraction */, async () => startInteraction(allowedChat));
 	onTextReactions.set(/\/currentQuestion */, async () => sendMessage(await getUserQuestion(allowedChat)));
-
-	bot.on("polling_error", (err) => console.log(err));
+	onTextReactions.set(/\/answer */, async () => {
+		bot = new TelegramBot(token, { polling: true });
+		bot.onText(
+			/\/.+/,
+			reject(async (_, ...args) => {
+				await answerQuestion(allowedChat, args[0]);
+				bot = new TelegramBot(token, { polling: true });
+				onTextReactions.forEach((reaction, answer) => {
+					bot.onText(
+						answer,
+						reject((msg, ...args) => reaction(msg, ...args))
+					);
+				});
+			})
+		);
+	});
 
 	onTextReactions.forEach((reaction, answer) => {
 		bot.onText(

@@ -44,7 +44,7 @@ export async function saveQuestion(question: Question, id?: string) {
 	await db.set(questionKey(id ?? questionId()), question);
 	return id;
 }
-export function getAllQuestions() {
+export function getAllQuestions(): Promise<Question[]> {
 	return db
 		.list(questionKeyPrefix)
 		.then((questionKeys) => Promise.all(questionKeys.map((key) => db.get(key) as Promise<string>)));
