@@ -15,7 +15,7 @@ export function userKey(userId: string) {
 }
 export const questionKeyPrefix = "QUESTION-";
 export function questionKey(questionId: string) {
-	return "QUESTION-" + questionId;
+	return questionKeyPrefix + questionId;
 }
 
 //@ts-ignore
@@ -34,7 +34,7 @@ export async function saveUser(userId: string, userState: UserState) {
 }
 
 export async function getQuestion(questionId: string) {
-	const question = (await db.get(questionKey(questionId))) as Promise<string>;
+	const question = (await db.get(questionKey(questionId))) as Promise<Question>;
 	if (!question) {
 		throw "Missing Question with id " + questionId;
 	}
@@ -51,11 +51,11 @@ export function getAllQuestions(): Promise<Question[]> {
 }
 
 export function getUserQuestion(userId: string) {
-	return getUser(userId).then((userState) => {
+	return getUser(userId).then(async (userState) => {
 		if (!userState.interactionState) {
 			return "Please start an interaction before requesting a question.";
 		}
-		return getQuestion((userState as UserState).interactionState.currentQuestionId);
+		return (await getQuestion((userState as UserState).interactionState.currentQuestionId)).text;
 	});
 }
 export function modifyUser(userId: string, modify: (userState: UserState) => UserState) {
