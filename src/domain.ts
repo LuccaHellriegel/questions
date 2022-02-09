@@ -130,7 +130,10 @@ export function getNextQuestion(userState: UserState) {
 }
 
 export function addInteraction(userState: UserState): UserState {
-	const nextQuestion = getNextQuestion(userState);
+	const nextQuestion = getNextQuestion({
+		...userState,
+		interactionState: { currentPosition: -1, currentQuestionId: "", type: Interaction.ANSWERING_QUESTIONS },
+	});
 	if (!nextQuestion) {
 		console.log("Tried to start interaction without any questions");
 		return userState;
