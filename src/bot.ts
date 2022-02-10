@@ -9,7 +9,7 @@ export function questionList(questions: string[]) {
 
 export async function init(userId: string, db: DB, app: App) {
 	//@ts-ignore
-	if (!(await getUser(userId)) || (await getUser(userId)).currentQuestionId) {
+	if (!(await db.getUser(userId)) || (await db.getUser(userId)).currentQuestionId) {
 		await db.dbInstance.empty();
 		await db.saveUser(userId, defaultState());
 	}
