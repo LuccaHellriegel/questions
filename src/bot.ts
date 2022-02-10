@@ -66,11 +66,11 @@ export function setTextReactions(
 		console.log(Array.from(onTextReactions.keys()));
 		Array.from(onTextReactions.keys()).forEach((regEx) => bot.removeTextListener(regEx));
 		bot.onText(
-			/\/.+/,
+			/.+/,
 			reject(async (_, ...args) => {
 				console.log(_, args);
 				await app.answerQuestion(allowedUserId, args[0]);
-				bot.removeTextListener(/\/.+/);
+				bot.removeTextListener(/.+/);
 				onTextReactions.forEach((reaction, answer) => {
 					bot.onText(
 						answer,
