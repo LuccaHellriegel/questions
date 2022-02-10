@@ -8,9 +8,10 @@ export function questionList(questions: string[]) {
 }
 
 export async function init(userId: string, db: DB, app: App) {
+	await db.dbInstance.empty();
+
 	//@ts-ignore
-	if (!(await db.getUser(userId)) || (await db.getUser(userId)).currentQuestionId) {
-		await db.dbInstance.empty();
+	if (!(await db.getUser(userId))) {
 		await db.saveUser(userId, defaultState());
 	}
 
@@ -63,13 +64,11 @@ export function setTextReactions(
 	onTextReactions.set(/\/endInteraction */, async () => app.endInteraction(allowedUserId));
 	onTextReactions.set(/\/currentQuestion */, async () => sendMessage(await app.getUserQuestion(allowedUserId)));
 	onTextReactions.set(/\/answer */, async () => {
-		console.log(Array.from(onTextReactions.keys()));
 		Array.from(onTextReactions.keys()).forEach((regEx) => bot.removeTextListener(regEx));
 		bot.onText(
 			/.+/,
 			reject(async (_, ...args) => {
-				console.log(_, args);
-				await app.answerQuestion(allowedUserId, args[0]);
+				await app.answerQuestion(allowedUserId, args[0][0]);
 				bot.removeTextListener(/.+/);
 				onTextReactions.forEach((reaction, answer) => {
 					bot.onText(
