@@ -1,66 +1,73 @@
-import {
-	saveQuestion,
-	getUser,
-	saveUser,
-	db,
-	getAllQuestions,
-	getUserQuestion,
-	dailyQuestion,
-	startInteraction,
-	answerQuestion,
-	endInteraction,
-} from "./app";
-import { defaultState, questionList, QuestionType } from "./domain";
+import { defaultState, QuestionType } from "./domain";
 import TelegramBot from "node-telegram-bot-api/src/telegram";
+import { DB } from "./db";
+import { App } from "./app";
 
-export async function bot() {
-	const token = process.env["botToken"];
-	const allowedChat = process.env["chatID"];
+export function questionList(questions: string[]) {
+	return "* " + questions.join("\n* ");
+}
 
+export async function init(userId: string, db: DB, app: App) {
 	//@ts-ignore
-	if (!(await getUser(allowedChat)) || (await getUser(allowedChat)).currentQuestionId) {
-		await db.empty();
-		await saveUser(allowedChat, defaultState());
+	if (!(await getUser(userId)) || (await getUser(userId)).currentQuestionId) {
+		await db.dbInstance.empty();
+		await db.saveUser(userId, defaultState());
 	}
 
-	await saveQuestion({ type: QuestionType.TEXT, text: "What are your ideas for using this?" }, "IDEAS");
-	await saveQuestion({ type: QuestionType.TEXT, text: "How long did you sleep?" }, "SLEEP");
+	await db.saveQuestion({ type: QuestionType.TEXT, text: "What are your ideas for using this?" }, "IDEAS");
+	await db.saveQuestion({ type: QuestionType.TEXT, text: "How long did you sleep?" }, "SLEEP");
 
-	await dailyQuestion(allowedChat, "SLEEP");
+	await app.dailyQuestion(userId, "SLEEP");
+}
 
-	let bot = new TelegramBot(token, { polling: true });
+interface Reject {
+	(msg, ...args): void;
+}
 
-	function reject(callback) {
-		return (msg, ...args) => {
-			if (msg.chat.id.toString() === allowedChat) {
+export function rejection(allowedUserId: string): Reject {
+	return (callback) =>
+		(msg, ...args) => {
+			if (msg.chat.id.toString() === allowedUserId) {
 				callback(msg, ...args);
 			} else {
 				console.log("Illegal access denied from: " + msg.chat.id);
 			}
 		};
-	}
+}
 
-	function sendMessage(msg) {
-		return bot.sendMessage(allowedChat, msg);
-	}
+interface SendMessage {
+	(msg: string): void;
+}
 
+export function sending(bot, allowedUserId: string): SendMessage {
+	return (msg) => bot.sendMessage(allowedUserId, msg);
+}
+
+export function setTextReactions(
+	bot,
+	db: DB,
+	app: App,
+	reject: Reject,
+	sendMessage: SendMessage,
+	allowedUserId: string
+) {
 	const onTextReactions = new Map<RegExp, Function>();
 
 	onTextReactions.set(/\/debug */, async () => {
-		sendMessage(JSON.stringify(await db.getAll(), undefined, 2));
+		sendMessage(JSON.stringify(await db.dbInstance.getAll(), undefined, 2));
 	});
 	onTextReactions.set(/\/allQuestions */, async () =>
-		getAllQuestions().then((questions) => sendMessage(questionList(questions.map((q) => q.text))))
+		db.getAllQuestions().then((questions) => sendMessage(questionList(questions.map((q) => q.text))))
 	);
-	onTextReactions.set(/\/startInteraction */, async () => startInteraction(allowedChat));
-	onTextReactions.set(/\/endInteraction */, async () => endInteraction(allowedChat));
-	onTextReactions.set(/\/currentQuestion */, async () => sendMessage(await getUserQuestion(allowedChat)));
+	onTextReactions.set(/\/startInteraction */, async () => app.startInteraction(allowedUserId));
+	onTextReactions.set(/\/endInteraction */, async () => app.endInteraction(allowedUserId));
+	onTextReactions.set(/\/currentQuestion */, async () => sendMessage(await app.getUserQuestion(allowedUserId)));
 	onTextReactions.set(/\/answer */, async () => {
 		Array.from(onTextReactions.keys()).forEach((regEx) => bot.removeTextListener(regEx));
 		bot.onText(
 			/\/.+/,
 			reject(async (_, ...args) => {
-				await answerQuestion(allowedChat, args[0]);
+				await app.answerQuestion(allowedUserId, args[0]);
 				bot.removeTextListener(/\/.+/);
 				onTextReactions.forEach((reaction, answer) => {
 					bot.onText(
@@ -78,6 +85,22 @@ export async function bot() {
 			reject((msg, ...args) => reaction(msg, ...args))
 		);
 	});
+
+	return onTextReactions;
+}
+
+export async function bot(db: DB, app: App) {
+	const token = process.env["botToken"];
+	const allowedChat = process.env["chatID"];
+
+	await init(allowedChat, db, app);
+
+	let bot = new TelegramBot(token, { polling: true });
+
+	const reject = rejection(allowedChat);
+	const sendMessage = sending(bot, allowedChat);
+
+	const onTextReactions = setTextReactions(bot, db, app, reject, sendMessage, allowedChat);
 
 	sendMessage("Online!\n* " + Array.from(onTextReactions.keys()).join("\n* "));
 }

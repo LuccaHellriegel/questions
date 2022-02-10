@@ -63,9 +63,6 @@ export function addAnswerToCurrentQuestion(userState: UserState, answerStr: stri
 		date: new Date().toISOString(),
 	});
 }
-export function questionList(questions: string[]) {
-	return "* " + questions.join("\n* ");
-}
 export function questionId() {
 	return nanoid();
 }

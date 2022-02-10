@@ -1,82 +1,47 @@
+import { DB } from "./db";
 import {
 	UserState,
-	questionId,
 	addScheduledQuestion,
 	scheduledQuestion,
-	Question,
 	addAnswerToCurrentQuestion,
 	addInteraction,
 	addDailyQuestion,
 	removeInteraction,
 } from "./domain";
-import Client from "@replit/database";
 
-export function userKey(userId: string) {
-	return "USER-" + userId;
-}
-export const questionKeyPrefix = "QUESTION-";
-export function questionKey(questionId: string) {
-	return questionKeyPrefix + questionId;
-}
-
-//@ts-ignore
-export const db = new Client();
-
-export async function getUser(userId) {
-	const userState = (await db.get(userKey(userId))) as Promise<UserState>;
-	if (!userState) {
-		throw "Missing User with id " + userId;
+export function createApp(db: DB) {
+	function getUserQuestion(userId: string) {
+		return db.getUser(userId).then(async (userState) => {
+			if (!userState.interactionState) {
+				return "Please start an interaction before requesting a question.";
+			}
+			return (await db.getQuestion((userState as UserState).interactionState.currentQuestionId)).text;
+		});
 	}
-	return userState;
-}
-export async function saveUser(userId: string, userState: UserState) {
-	await db.set(userKey(userId), userState);
-	return userState;
-}
-
-export async function getQuestion(questionId: string) {
-	const question = (await db.get(questionKey(questionId))) as Promise<Question>;
-	if (!question) {
-		throw "Missing Question with id " + questionId;
+	function modifyUser(userId: string, modify: (userState: UserState) => UserState) {
+		return db
+			.getUser(userId)
+			.then((userState) => modify(userState))
+			.then((userState) => db.saveUser(userId, userState));
 	}
-	return question;
-}
-export async function saveQuestion(question: Question, id?: string) {
-	await db.set(questionKey(id ?? questionId()), question);
-	return id;
-}
-export function getAllQuestions(): Promise<Question[]> {
-	return db
-		.list(questionKeyPrefix)
-		.then((questionKeys) => Promise.all(questionKeys.map((key) => db.get(key) as Promise<string>)));
+	function answerQuestion(userId: string, answerStr: string) {
+		return modifyUser(userId, (userState) => addAnswerToCurrentQuestion(userState, answerStr));
+	}
+	async function scheduleQuestion(userId: string, questionId: string, isoDate: string) {
+		return modifyUser(userId, (userState) => addScheduledQuestion(userState, scheduledQuestion(questionId, isoDate)));
+	}
+	async function startInteraction(userId: string) {
+		return modifyUser(userId, addInteraction);
+	}
+	async function endInteraction(userId: string) {
+		return modifyUser(userId, removeInteraction);
+	}
+
+	async function dailyQuestion(userId: string, questionId: string) {
+		return modifyUser(userId, (userState) => addDailyQuestion(userState, questionId));
+	}
+
+	return { getUserQuestion, answerQuestion, scheduleQuestion, startInteraction, endInteraction, dailyQuestion };
 }
 
-export function getUserQuestion(userId: string) {
-	return getUser(userId).then(async (userState) => {
-		if (!userState.interactionState) {
-			return "Please start an interaction before requesting a question.";
-		}
-		return (await getQuestion((userState as UserState).interactionState.currentQuestionId)).text;
-	});
-}
-export function modifyUser(userId: string, modify: (userState: UserState) => UserState) {
-	return getUser(userId)
-		.then((userState) => modify(userState))
-		.then((userState) => saveUser(userId, userState));
-}
-export function answerQuestion(userId: string, answerStr: string) {
-	return modifyUser(userId, (userState) => addAnswerToCurrentQuestion(userState, answerStr));
-}
-export async function scheduleQuestion(userId: string, questionId: string, isoDate: string) {
-	return modifyUser(userId, (userState) => addScheduledQuestion(userState, scheduledQuestion(questionId, isoDate)));
-}
-export async function startInteraction(userId: string) {
-	return modifyUser(userId, addInteraction);
-}
-export async function endInteraction(userId: string) {
-	return modifyUser(userId, removeInteraction);
-}
-
-export async function dailyQuestion(userId: string, questionId: string) {
-	return modifyUser(userId, (userState) => addDailyQuestion(userState, questionId));
-}
+export type App = ReturnType<typeof createApp>;
