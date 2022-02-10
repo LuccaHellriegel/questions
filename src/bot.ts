@@ -8,7 +8,7 @@ export function questionList(questions: string[]) {
 }
 
 export async function init(userId: string, db: DB, app: App) {
-	await db.dbInstance.empty();
+	// await db.dbInstance.empty();
 
 	try {
 		await db.getUser(userId);
