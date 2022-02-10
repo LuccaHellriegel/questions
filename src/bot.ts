@@ -63,10 +63,12 @@ export function setTextReactions(
 	onTextReactions.set(/\/endInteraction */, async () => app.endInteraction(allowedUserId));
 	onTextReactions.set(/\/currentQuestion */, async () => sendMessage(await app.getUserQuestion(allowedUserId)));
 	onTextReactions.set(/\/answer */, async () => {
+		console.log(Array.from(onTextReactions.keys()));
 		Array.from(onTextReactions.keys()).forEach((regEx) => bot.removeTextListener(regEx));
 		bot.onText(
 			/\/.+/,
 			reject(async (_, ...args) => {
+				console.log(_, args);
 				await app.answerQuestion(allowedUserId, args[0]);
 				bot.removeTextListener(/\/.+/);
 				onTextReactions.forEach((reaction, answer) => {
