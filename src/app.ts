@@ -1,10 +1,10 @@
 import { DB } from "./db";
 import {
-	UserState,
+	User,
 	addScheduledQuestion,
 	scheduledQuestion,
 	addAnswerToCurrentQuestion,
-	addInteraction,
+	interact,
 	addDailyQuestion,
 	removeInteraction,
 } from "./domain";
@@ -15,10 +15,10 @@ export function createApp(db: DB) {
 			if (!userState.interactionState) {
 				return "Please start an interaction before requesting a question.";
 			}
-			return (await db.getQuestion((userState as UserState).interactionState.currentQuestionId)).text;
+			return (await db.getQuestion((userState as User).interactionState.currentQuestionId)).text;
 		});
 	}
-	function modifyUser(userId: string, modify: (userState: UserState) => UserState) {
+	function modifyUser(userId: string, modify: (userState: User) => User) {
 		return db
 			.getUser(userId)
 			.then((userState) => modify(userState))
@@ -31,7 +31,7 @@ export function createApp(db: DB) {
 		return modifyUser(userId, (userState) => addScheduledQuestion(userState, scheduledQuestion(questionId, isoDate)));
 	}
 	async function startInteraction(userId: string) {
-		return modifyUser(userId, addInteraction);
+		return modifyUser(userId, interact);
 	}
 	async function endInteraction(userId: string) {
 		return modifyUser(userId, removeInteraction);

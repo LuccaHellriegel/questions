@@ -16,6 +16,7 @@ export enum QuestionType {
 	BINARY,
 }
 export interface Question {
+	id: string;
 	type: QuestionType;
 	text: string;
 }
@@ -29,7 +30,8 @@ export interface InteractionState {
 	currentQuestionId: string;
 }
 
-export interface UserState {
+export interface User {
+	id: string;
 	interactionState?: InteractionState;
 	answers: Answer[];
 	sortedScheduledQuestions: ScheduledQuestion[];
@@ -37,7 +39,7 @@ export interface UserState {
 	weeklyQuestions: string[][];
 }
 
-export function addAnswer(userState: UserState, answer: Answer): UserState {
+export function addAnswer(userState: User, answer: Answer): User {
 	if (!userState.interactionState) {
 		console.log("Tried to answer question without running interaction.");
 		return userState;
@@ -51,7 +53,7 @@ export function addAnswer(userState: UserState, answer: Answer): UserState {
 		},
 	};
 }
-export function addAnswerToCurrentQuestion(userState: UserState, answerStr: string): UserState {
+export function addAnswerToCurrentQuestion(userState: User, answerStr: string): User {
 	if (!userState.interactionState) {
 		console.log("Tried to answer current question without running interaction");
 		return userState;
@@ -72,22 +74,22 @@ export function sortScheduledQuestions(questions: ScheduledQuestion[]) {
 export function scheduledQuestion(questionId: string, date: string): ScheduledQuestion {
 	return { questionId, date };
 }
-export function addScheduledQuestion(userState: UserState, question: ScheduledQuestion): UserState {
+export function addScheduledQuestion(userState: User, question: ScheduledQuestion): User {
 	return {
 		...userState,
 		sortedScheduledQuestions: sortScheduledQuestions([...userState.sortedScheduledQuestions, question]),
 	};
 }
-export function addDailyQuestion(userState: UserState, questionId: string): UserState {
+export function addDailyQuestion(userState: User, questionId: string): User {
 	return { ...userState, dailyQuestions: [...userState.dailyQuestions.filter((q) => q !== questionId), questionId] };
 }
-export function addWeeklyQuestion(userState: UserState, questionId: string, day: number): UserState {
+export function addWeeklyQuestion(userState: User, questionId: string, day: number): User {
 	const clampedDay = Math.min(Math.max(0, day), 6);
 	const weeklyQuestions = [...userState.weeklyQuestions];
 	weeklyQuestions[clampedDay] = [...weeklyQuestions[clampedDay].filter((q) => q !== questionId), questionId];
 	return { ...userState, weeklyQuestions };
 }
-export function getDueQuestions(userState: UserState) {
+export function getDueQuestions(userState: User) {
 	const today = Date.now();
 	const dueQs: ScheduledQuestion[] = [];
 	for (const scheduledQuestion of userState.sortedScheduledQuestions) {
@@ -99,7 +101,7 @@ export function getDueQuestions(userState: UserState) {
 	}
 	return dueQs;
 }
-export function defaultState(): UserState {
+export function defaultState(): User {
 	return {
 		interactionState: null,
 		answers: [],
@@ -109,11 +111,11 @@ export function defaultState(): UserState {
 	};
 }
 
-export function getTodaysWeeklyQuestions(userState: UserState) {
+export function getTodaysWeeklyQuestions(userState: User) {
 	const todaysDay = new Date().getDay();
 	return userState.weeklyQuestions[todaysDay];
 }
-export function getNextQuestion(userState: UserState) {
+export function getNextQuestion(userState: User) {
 	const pos = userState.interactionState.currentPosition + 1;
 
 	if (pos < userState.dailyQuestions.length) {
@@ -126,10 +128,15 @@ export function getNextQuestion(userState: UserState) {
 	}
 }
 
-export function addInteraction(userState: UserState): UserState {
+export function interact(userState: User): User {
+	const pos = userState.interactionState?.currentPosition ?? -1;
 	const nextQuestion = getNextQuestion({
 		...userState,
-		interactionState: { currentPosition: -1, currentQuestionId: "", type: Interaction.ANSWERING_QUESTIONS },
+		interactionState: {
+			currentPosition: pos,
+			currentQuestionId: "",
+			type: Interaction.ANSWERING_QUESTIONS,
+		},
 	});
 	if (!nextQuestion) {
 		console.log("Tried to start interaction without any questions");
@@ -137,9 +144,13 @@ export function addInteraction(userState: UserState): UserState {
 	}
 	return {
 		...userState,
-		interactionState: { currentPosition: 0, currentQuestionId: nextQuestion, type: Interaction.ANSWERING_QUESTIONS },
+		interactionState: {
+			currentPosition: pos + 1,
+			currentQuestionId: nextQuestion,
+			type: Interaction.ANSWERING_QUESTIONS,
+		},
 	};
 }
-export function removeInteraction(userState: UserState): UserState {
+export function removeInteraction(userState: User): User {
 	return { ...userState, interactionState: undefined };
 }

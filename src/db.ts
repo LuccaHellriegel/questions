@@ -1,5 +1,5 @@
 import Database, { Client } from "@replit/database";
-import { UserState, Question, questionId } from "./domain";
+import { User, Question, questionId } from "./domain";
 
 export function userKey(userId: string) {
 	return "USER-" + userId;
@@ -11,13 +11,13 @@ export function questionKey(questionId: string) {
 
 export function createDB(dbInstance: Client) {
 	async function getUser(userId) {
-		const userState = (await dbInstance.get(userKey(userId))) as Promise<UserState>;
+		const userState = (await dbInstance.get(userKey(userId))) as Promise<User>;
 		if (!userState) {
 			throw "Missing User with id " + userId;
 		}
 		return userState;
 	}
-	async function saveUser(userId: string, userState: UserState) {
+	async function saveUser(userId: string, userState: User) {
 		await dbInstance.set(userKey(userId), userState);
 		return userState;
 	}
