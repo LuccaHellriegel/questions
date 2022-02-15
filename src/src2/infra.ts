@@ -1,6 +1,6 @@
 import Database, { Client } from "@replit/database";
 import { nanoid } from "nanoid";
-import { Question, User } from "./domain";
+import { Question, User } from "./domain/domain";
 
 export function userKey(userId: string) {
 	return "USER-" + userId;
