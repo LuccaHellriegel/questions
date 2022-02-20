@@ -1,7 +1,7 @@
-import { defaultState, QuestionType } from "./domain";
 import TelegramBot from "node-telegram-bot-api/src/telegram";
-import { DB } from "./db";
 import { App } from "./app";
+
+//TODO: bot should reconfigure his reactions in response to which state we are in
 
 export function questionList(questions: string[]) {
 	return "* " + questions.join("\n* ");

@@ -1,6 +1,8 @@
 import { expect, test } from "vitest";
-import { createQuestion, Question, createUser } from "./model";
 import { RemovalResponse, removeQuestionById, removeQuestionByText } from "./remove";
+import { today } from "../../util/date";
+import { createQuestion, Question } from "./question";
+import { createUser } from "../user/user";
 
 test("removing questions should remove them from the question list", () => {
 	// GIVEN
@@ -80,9 +82,9 @@ test("removing questions should lead to them being removed from every users sche
 	const question2 = createQuestion("question2");
 	const user = createUser();
 	const expectedUser = { ...createUser(), id: user.id };
-	user.sortedScheduledQuestions.push({ id: question1.id, date: "" });
-	user.sortedScheduledQuestions.push({ id: question2.id, date: "" });
-	expectedUser.sortedScheduledQuestions.push({ id: question2.id, date: "" });
+	user.sortedScheduledQuestions.push({ questionId: question1.id, date: today() });
+	user.sortedScheduledQuestions.push({ questionId: question2.id, date: today() });
+	expectedUser.sortedScheduledQuestions.push({ questionId: question2.id, date: today() });
 
 	const expected: RemovalResponse = {
 		success: true,
@@ -99,3 +101,7 @@ test("removing questions should lead to them being removed from every users sche
 	expect(result1).toEqual(expected);
 	expect(result2).toEqual(expected);
 });
+
+//TODO:
+test("removing a question that is being answered should not be possible");
+//TODO: what to do with answered questions? probably for now also not removable

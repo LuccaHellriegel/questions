@@ -1,6 +1,7 @@
 import Database, { Client } from "@replit/database";
 import { nanoid } from "nanoid";
-import { Question, User } from "./domain/domain";
+import { Question } from "./domain/global/question";
+import { DBUser } from "./domain/mapper";
 
 export function userKey(userId: string) {
 	return "USER-" + userId;
@@ -11,10 +12,10 @@ export function questionKey(questionId: string) {
 }
 
 export function createInfra(dbInstance: Client) {
-	function getUser(userId: string) {
-		return dbInstance.get(userKey(userId)) as Promise<User | null>;
+	function getDBUser(userId: string) {
+		return dbInstance.get(userKey(userId)) as Promise<DBUser | null>;
 	}
-	async function saveUser(user: User): Promise<User> {
+	async function saveDBUser(user: DBUser): Promise<DBUser> {
 		await dbInstance.set(userKey(user.id), user);
 		return user;
 	}
@@ -36,8 +37,8 @@ export function createInfra(dbInstance: Client) {
 
 	return {
 		dbInstance,
-		getUser,
-		saveUser,
+		getDBUser,
+		saveDBUser,
 		getQuestion,
 		saveQuestion,
 		deleteQuestion,

@@ -1,16 +1,6 @@
-import { Question, User } from "./model";
-
-export function removeQuestionFromUserById(questionId: string, user: User): User {
-	const idFilter = (id) => id !== questionId;
-	return {
-		...user,
-		sortedScheduledQuestions: user.sortedScheduledQuestions.filter((q) => q.id !== questionId),
-		dailyQuestions: user.dailyQuestions.filter(idFilter),
-		weeklyQuestions: user.weeklyQuestions.map((arr) => arr.filter(idFilter)),
-	};
-}
-
-//TODO: removeQuestionfromUserByText
+import { Question } from "./question";
+import { User } from "../user/model";
+import { removeQuestionFromUserById } from "../user/question";
 
 function splitQuestionsByText(text: string, questions: Question[]) {
 	const found: Question[] = [];
@@ -26,8 +16,14 @@ function splitQuestionsByText(text: string, questions: Question[]) {
 	return { found, remaining };
 }
 
-export type RemovalResponse = { success: boolean; found: Question[]; users: User[]; remaining: Question[] };
+export interface RemovalResponse {
+	success: boolean;
+	found: Question[];
+	users: User[];
+	remaining: Question[];
+}
 
+//TODO: optimize the questions arg by using an async iterator?
 export function removeQuestionByText(text: string, questions: Question[], users: User[]): RemovalResponse {
 	const { found, remaining } = splitQuestionsByText(text, questions);
 	if (found.length === 1) {
@@ -69,3 +65,5 @@ export function removeQuestionById(questionId: string, questions: Question[], us
 		return { success: false, found, remaining, users };
 	}
 }
+
+//TODO: if this goes multi user, probably need some notification stuff for removed questions and the option to re-add them
